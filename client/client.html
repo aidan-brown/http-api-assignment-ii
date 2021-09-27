@@ -6,7 +6,81 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
   <script type="text/babel">
+    const parseJSON = (xhr, content) => {
+      if(xhr.response && xhr.getResponseHeader('Content-Type') === 'application/json'){
+        const obj = JSON.parse(xhr.response);
 
+        if(obj.message){
+          content.innerHTML += `<p>${obj.message}</p>`;
+        }
+        if(obj.users){
+          content.innerHTML += `<p>${JSON.stringify(obj.users)}</p>`
+        }
+      }
+    }
+
+    const handleResponse = (xhr) => {
+      const contentSection = document.querySelector('#content');
+
+      switch(xhr.status){
+        case 200:
+          contentSection.innerHTML = '<b>Success!</b>';
+          break;
+        case 201:
+          contentSection.innerHTML = '<b>Created!</b>';
+          break;
+        case 204:
+          contentSection.innerHTML = '<b>Updated (No Content)!</b>';
+          break;
+        case 400:
+          contentSection.innerHTML = '<b>Bad Request:</b>';
+          break;
+        case 404:
+          contentSection.innerHTML = '<b>Resource Not Found:</b>';
+          break;
+        default:
+          contentSection.innerHTML = '<b>Error code not implemented by client</b>';
+          break;
+      }
+
+      parseJSON(xhr, contentSection);
+    }
+
+    const sendRequest = (params={}) => {
+      const url = window.location.origin + params.url;
+      sendAjax(url, params.reqMethod, params.userObj);
+    }
+
+    const sendAjax = (url, reqMethod, reqBody) => {
+      let reqData = '';
+      const xhr = new XMLHttpRequest();
+      xhr.open(reqMethod, url);
+      xhr.setRequestHeader('Accept', 'application/json');
+      if(reqMethod == 'POST'){
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        reqData = `name=${reqBody.name}&age=${reqBody.age}`;
+      }
+
+      xhr.onload = () => handleResponse(xhr);
+      xhr.send(reqData);
+    }
+
+    const init = () => {
+      const addUserForm = document.querySelector('#nameForm');
+      const getUserForm = document.querySelector('#userForm');
+      
+
+      addUserForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendRequest({reqMethod: 'POST', url: '/addUser', userObj: {name: document.querySelector('#nameField').value, age: document.querySelector('#ageField').value}});
+      });
+      getUserForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendRequest({reqMethod: document.querySelector('#methodSelect').value.toUpperCase(), url: document.querySelector('#urlField').value});
+      });
+    }
+
+    window.onload = init;
   </script>
 </head>
 <body>
